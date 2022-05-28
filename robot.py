@@ -134,20 +134,21 @@ class Robot(object):
             self.cam_depth_scale = np.loadtxt('real/camera_depth_scale.txt', delimiter=' ')
 
 
-    def setup_sim_camera(self):
+    def setup_sim_camera(self): #NOTE：这一节存在问题
 
         # Get handle to camera
         sim_ret, self.cam_handle = vrep.simxGetObjectHandle(self.sim_client, 'Vision_sensor_persp', vrep.simx_opmode_blocking)
 
         # Get camera pose and intrinsics in simulation
+        # 对于摄像头的位置，进行了位姿转换，是怎么进行的？
         sim_ret, cam_position = vrep.simxGetObjectPosition(self.sim_client, self.cam_handle, -1, vrep.simx_opmode_blocking)
-        sim_ret, cam_orientation = vrep.simxGetObjectOrientation(self.sim_client, self.cam_handle, -1, vrep.simx_opmode_blocking)
+        sim_ret, cam_orientation = vrep.simxGetObjectOrientation(self.sim_client, self.cam_handle, -1, vrep.simx_opmode_blocking) # 获得相对于参考坐标系的绝对的欧拉角
         cam_trans = np.eye(4,4)
         cam_trans[0:3,3] = np.asarray(cam_position)
-        cam_orientation = [-cam_orientation[0], -cam_orientation[1], -cam_orientation[2]]
+        cam_orientation = [-cam_orientation[0], -cam_orientation[1], -cam_orientation[2]] # 为什么加负号
         cam_rotm = np.eye(4,4)
-        cam_rotm[0:3,0:3] = np.linalg.inv(utils.euler2rotm(cam_orientation))
-        self.cam_pose = np.dot(cam_trans, cam_rotm) # Compute rigid transformation representating camera pose
+        cam_rotm[0:3,0:3] = np.linalg.inv(utils.euler2rotm(cam_orientation)) # 对矩阵求逆
+        self.cam_pose = np.dot(cam_trans, cam_rotm) # Compute rigid transformation representating camera pose # 相当于采用4*4矩阵的形式表示位姿
         self.cam_intrinsics = np.asarray([[618.62, 0, 320], [0, 618.62, 240], [0, 0, 1]])
         self.cam_depth_scale = 1
 
